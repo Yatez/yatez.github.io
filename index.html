@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COMP30231 Revision Flashcards v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #222;
+    --border: #2e2e2e;
+    --text: #f0ede6;
+    --muted: #888;
+    --accent: #c8f04a;
+    --accent-dim: #3a4a10;
+    --know: #4ade80;
+    --know-dim: #14401f;
+    --learn: #f87171;
+    --learn-dim: #3f1010;
+    --card-front: #1c1c1c;
+    --card-back: #1a2210;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 2rem 2.5rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+
+  header h1 span { color: var(--accent); }
+
+  .stats {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .stats strong { color: var(--text); font-weight: 500; }
+
+  .filter-bar {
+    padding: 1rem 2.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .filter-label { font-size: 0.75rem; color: var(--muted); margin-right: 0.5rem; }
+
+  .chip {
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-size: 0.75rem;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .deck-info {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .card-wrap {
+    width: 100%;
+    max-width: 640px;
+    perspective: 1200px;
+    cursor: pointer;
+  }
+
+  .card-inner {
+    width: 100%;
+    min-height: 280px;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .card-inner.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    width: 100%;
+    min-height: 280px;
+    backface-visibility: hidden;
+    border-radius: 16px;
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .card-front {
+    background: var(--card-front);
+    border: 1px solid var(--border);
+  }
+
+  .card-back {
+    background: var(--card-back);
+    border: 1px solid #3a4a10;
+    transform: rotateY(180deg);
+  }
+
+  .card-lecture {
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    font-weight: 500;
+  }
+
+  .card-question {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    line-height: 1.4;
+    color: var(--text);
+    font-weight: 400;
+  }
+
+  .card-hint {
+    margin-top: 1.5rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .card-answer-label {
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    font-weight: 500;
+  }
+
+  .card-answer {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .card-answer ul {
+    padding-left: 1.2rem;
+    margin-top: 0.5rem;
+  }
+
+  .card-answer ul li { margin-bottom: 0.3rem; }
+
+  .card-spacer { min-height: 280px; visibility: hidden; }
+
+  .controls {
+    width: 100%;
+    max-width: 640px;
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+  }
+
+  .btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 400;
+  }
+
+  .btn-know {
+    background: var(--know-dim);
+    border-color: var(--know);
+    color: var(--know);
+  }
+
+  .btn-know:hover { background: #1d5c30; }
+
+  .btn-learn {
+    background: var(--learn-dim);
+    border-color: var(--learn);
+    color: var(--learn);
+  }
+
+  .btn-learn:hover { background: #5a1a1a; }
+
+  .btn-flip {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-flip:hover { background: #4a6a18; }
+
+  .btn-nav {
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .btn-nav:hover { color: var(--text); border-color: var(--muted); }
+
+  .progress-bar {
+    width: 100%;
+    max-width: 640px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 1.5rem;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+    padding: 3rem;
+  }
+
+  .empty-state h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    font-weight: 400;
+  }
+
+  .score-ring {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot-know { background: var(--know); }
+  .dot-learn { background: var(--learn); }
+  .dot-unseen { background: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>COMP30231 <span>Flashcards v2</span></h1>
+  <div class="stats">
+    <span><strong id="stat-total">0</strong> cards</span>
+    <span class="score-ring"><span class="dot dot-know"></span> <strong id="stat-know">0</strong> known</span>
+    <span class="score-ring"><span class="dot dot-learn"></span> <strong id="stat-learn">0</strong> to review</span>
+  </div>
+</header>
+
+<div class="filter-bar">
+  <span class="filter-label">Filter:</span>
+  <button class="chip active" onclick="setFilter('all', this)">All lectures</button>
+  <button class="chip" onclick="setFilter('L1', this)">L1 IS Strategy</button>
+  <button class="chip" onclick="setFilter('L2', this)">L2 Cloud & EA</button>
+  <button class="chip" onclick="setFilter('L3', this)">L3 Gap Analysis</button>
+  <button class="chip" onclick="setFilter('L4', this)">L4 Governance</button>
+  <button class="chip" onclick="setFilter('L5', this)">L5 Cost Models</button>
+  <button class="chip" onclick="setFilter('L6', this)">L6 Business Case</button>
+  <button class="chip" onclick="setFilter('L7', this)">L7 Risk</button>
+  <button class="chip" onclick="setFilter('L8', this)">L8 Providers</button>
+  <button class="chip" onclick="setFilter('L9', this)">L9 Contracting</button>
+  <button class="chip" onclick="setFilter('review', this)" style="margin-left:auto">⚑ Review only</button>
+</div>
+
+<main>
+  <div class="deck-info" id="deck-info"></div>
+
+  <div class="card-wrap" onclick="flipCard()">
+    <div class="card-inner" id="card-inner">
+      <div class="card-face card-front" id="card-front">
+        <div class="card-lecture" id="card-lecture"></div>
+        <div class="card-question" id="card-question"></div>
+        <div class="card-hint">Click to reveal answer</div>
+      </div>
+      <div class="card-face card-back" id="card-back">
+        <div class="card-answer-label">Answer</div>
+        <div class="card-answer" id="card-answer"></div>
+      </div>
+    </div>
+    <div class="card-spacer"></div>
+  </div>
+
+  <div class="controls" id="controls">
+    <button class="btn btn-nav" onclick="prev()">← Prev</button>
+    <button class="btn btn-flip" onclick="flipCard()">Flip</button>
+    <button class="btn btn-learn" onclick="markCard('learn')">Still learning</button>
+    <button class="btn btn-know" onclick="markCard('know')">Got it ✓</button>
+    <button class="btn btn-nav" onclick="next()">Next →</button>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+</main>
+
+<script>
+const ALL_CARDS = [
+  // ============================================================
+  // L1 — IS STRATEGY (8 cards)
+  // ============================================================
+  {id:1, lecture:"L1 — IS Strategy", q:"What is SoMoClo and how is it defined?", a:"The convergence of <strong>Social</strong>, <strong>Mobile</strong>, and <strong>Cloud</strong> technologies. <br><br>Definition: <em>'The convergence of collaborative, on-the-go technologies that allow users to access data and applications from anywhere at any time.'</em> <br><br>From 2012 onwards: cloud = core infrastructure, mobile = dominant access layer, social = means of interaction."},
+
+  {id:2, lecture:"L1 — IS Strategy", q:"What are the generic drivers of IS strategy focus? (McKeen & Smith)", a:"<ul><li><strong>Cost reduction</strong> — operational savings</li><li><strong>Risk mitigation</strong> — protecting from technology/operational risk</li><li><strong>Technology development</strong> — adopting emerging tech</li><li><strong>Competitive environment</strong> — using IS for advantage</li><li><strong>Legislation changes</strong> — compliance with new laws</li></ul>These intersect with business goals to drive IS strategy."},
+
+  {id:3, lecture:"L1 — IS Strategy", q:"What are the 4 stages of IT-business alignment? (Hoque et al. 2006)", a:"<ul><li><strong>Stage 1:</strong> IT reacts to the business agenda such that they effectively work together</li><li><strong>Stage 2:</strong> Technology supports, enables, and does not constrain business strategies</li><li><strong>Stage 3:</strong> Rather than reacting, IT helps SET the business agenda — the two merge</li><li><strong>Stage 4:</strong> Technology not only enables current strategy but anticipates and shapes future business models</li></ul>Alignment is successful when it is <strong>no longer a topic of discussion</strong>."},
+
+  {id:4, lecture:"L1 — IS Strategy", q:"What are the 5 eras of IT adoption in order?", a:"Mainframes → Mini-computers/PCs → Internet/Web 1.0 → Mobile devices/Web 2.0 → <strong>Cloud computing</strong><br><br>Cette et al. (2015): ICT contribution to labour productivity rose 1995-2004, fell 2004-2013, but remains positive due to falling relative price of ICT."},
+
+  {id:5, lecture:"L1 — IS Strategy", q:"What are the top 3 reasons 49% of organisations delay cloud deployment?", a:"<ul><li>Poor cloud performance</li><li>Mergers and acquisitions complications</li><li>Security concerns</li></ul>"},
+
+  {id:6, lecture:"L1 — IS Strategy", q:"How can cloud computing help IS strategy?", a:"<ul><li>More flexible, adaptable IT services, devices and applications</li><li>Cost models based on expense rather than capital</li><li>Lower switching costs to other applications/platforms</li><li>Shared risk with cloud services provider(s)</li><li>Better able to collect/analyse customer, market, business data</li><li>Provide consistent applications and services across the organisation</li></ul>"},
+
+  {id:7, lecture:"L1 — IS Strategy", q:"What did Eli Lilly, GSK and Sybase quote as cloud benefits?", a:"<ul><li><strong>Eli Lilly:</strong> Server up in 3 minutes (was 7.5 weeks); 64-node Linux cluster in 5 mins (was 3 months)</li><li><strong>GlaxoSmithKline:</strong> 30% reduction in IT operational costs</li><li><strong>Sybase:</strong> ~$2M annual savings from private cloud since 2006</li></ul>"},
+
+  {id:8, lecture:"L1 — IS Strategy", q:"What are 'information workers' and how have they grown?", a:"Also called <strong>knowledge workers</strong> — software engineers, doctors, architects, scientists, accountants, lawyers, academics. <br><br>USA 1900-1960: ratio of information to production workers grew from <strong>0.22 → 0.75</strong>. Information workers grew from <strong>5.2M → 28M</strong>. <br>2020: information market = $136.48B; expected $196.7B by 2025."},
+
+  // ============================================================
+  // L2 — CLOUD & EA (12 cards)
+  // ============================================================
+  {id:9, lecture:"L2 — Cloud & EA", q:"What are the 5 NIST essential characteristics of cloud computing?", a:"<ul><li><strong>On-demand self-service</strong></li><li><strong>Broad network access</strong></li><li><strong>Resource pooling</strong></li><li><strong>Rapid elasticity</strong></li><li><strong>Measured service</strong></li></ul>These are the reasons cloud computing ≠ the Internet."},
+
+  {id:10, lecture:"L2 — Cloud & EA", q:"What are the cloud service delivery models?", a:"<ul><li><strong>IaaS</strong> — Infrastructure as a Service (servers, storage, networking — e.g. AWS EC2)</li><li><strong>PaaS</strong> — Platform as a Service (dev tools, runtimes, middleware — e.g. Azure App Service)</li><li><strong>SaaS</strong> — Software as a Service (full apps — e.g. Office 365, Salesforce)</li><li><strong>DaaS</strong> — Data as a Service (provision of data over the Internet)</li><li><strong>XaaS</strong> — Anything/Everything as a Service (umbrella term)</li></ul>"},
+
+  {id:11, lecture:"L2 — Cloud & EA", q:"What are the cloud deployment models?", a:"<ul><li><strong>Public</strong> — services available to general public/large industry group; lower cost, less control</li><li><strong>Private</strong> — one organisation only (on or off premises); useful for security/resource needs</li><li><strong>Community</strong> — shared by orgs with common requirements (e.g. regulated industries)</li><li><strong>Industry</strong> — built for a specific sector with preassembled apps (e.g. Microsoft Cloud for Healthcare)</li><li><strong>Hybrid</strong> — two or more types linked, each unique entity, useful for load balancing</li></ul>"},
+
+  {id:12, lecture:"L2 — Cloud & EA", q:"What is the IEEE definition of architecture?", a:"<em>'The fundamental concepts or properties of a system in its environment embodied in its elements, relationships and in the principles of its design and evolution.'</em><br><br>Enterprise Architecture creates a <strong>holistic view</strong> of each part of the enterprise so all systems work together to support the business."},
+
+  {id:13, lecture:"L2 — Cloud & EA", q:"What is the purpose of Enterprise Architecture?", a:"<ul><li>Represent and understand how the enterprise works</li><li>Capitalise acquired knowledge for later use</li><li>Rationalise and secure information</li><li>(Re)design and specify part of an enterprise</li><li>Analyse aspects (economic, organisational, qualitative)</li><li>Simulate the behaviour of parts of the enterprise</li><li>Make better decisions about operations and organisation</li><li>Control, coordinate or monitor parts of the enterprise</li></ul>"},
+
+  {id:14, lecture:"L2 — Cloud & EA", q:"What are the 3 viewpoints of the simple Enterprise Architecture model?", a:"<ul><li><strong>Business viewpoint</strong></li><li><strong>Information viewpoint</strong></li><li><strong>Technology viewpoint</strong></li></ul>An architecture must consider all three holistically."},
+
+  {id:15, lecture:"L2 — Cloud & EA", q:"What are the 4 components of the simple EA model?", a:"<ul><li><strong>Core business processes</strong> — stable, company-wide capabilities to execute the operating model</li><li><strong>Shared data driving core processes</strong> — customer records, product codes, batch records, etc.</li><li><strong>Key linking and automation technologies</strong> — middleware, portals, electronic interfaces</li><li><strong>Key customers</strong> — main customer groups/segments and their service channels</li></ul>"},
+
+  {id:16, lecture:"L2 — Cloud & EA", q:"What are the 3 types of EA framework patterns?", a:"<ul><li><strong>Taxonomy/Ontology-based</strong> — Zachman, IDEAS, DoDAF</li><li><strong>Process-based</strong> — TOGAF/ADM, EAP (Enterprise Architecture Planning)</li><li><strong>Hybrid</strong> — FEAF, DoDAF/NAF/MODAF</li></ul>"},
+
+  {id:17, lecture:"L2 — Cloud & EA", q:"What is TOGAF and how does it differ from Zachman?", a:"<strong>TOGAF (Open Group Architecture Framework) ADM:</strong> Process-based, iterative, step-by-step. Suitable for smaller orgs/projects. Recognises SOA as a specific architectural style. Includes 'Architecture Repository' for reusable services.<br><br><strong>Zachman:</strong> Taxonomy-based. Identifies WHAT needs to be made and a guide for organising information. Models all angles of an organisation's existing functions and processes.<br><br>They <em>complement</em> each other: TOGAF for process, Zachman for categorising artifacts."},
+
+  {id:18, lecture:"L2 — Cloud & EA", q:"What does DOTMLPF stand for?", a:"Used in EA transformation planning:<br><ul><li><strong>D</strong>octrine</li><li><strong>O</strong>rganization</li><li><strong>T</strong>raining</li><li><strong>M</strong>ateriel</li><li><strong>L</strong>eadership & Education</li><li><strong>P</strong>ersonnel</li><li><strong>F</strong>acilities</li></ul>Areas where changes may be needed in transformation."},
+
+  {id:19, lecture:"L2 — Cloud & EA", q:"What is the difference between RESTful and SOAP web services?", a:"<strong>RESTful (Representational State Transfer):</strong> Works with HTTP methods (GET, POST, PUT, DELETE). Lightweight, simple.<br><br><strong>SOAP (Simple Object Access Protocol):</strong> A protocol with specific requirements like XML messaging. More structured but heavier.<br><br>Both are referenced in service-oriented architecture for cloud services."},
+
+  {id:20, lecture:"L2 — Cloud & EA", q:"What does the implementation lifecycle for cloud adoption look like?", a:"<ul><li>Initial planning</li><li>Enterprise Architecture & cloud</li><li>Determine target architecture</li><li>Gap analysis & transition planning</li><li>Implementation</li><li>Governance (overarching all stages)</li></ul>This recurring diagram is the spine of weeks 2-4."},
+
+  // ============================================================
+  // L3 — GAP ANALYSIS & IMPLEMENTATION (8 cards)
+  // ============================================================
+  {id:21, lecture:"L3 — Gap Analysis", q:"What is a gap analysis?", a:"The 'Gap' between the <strong>current state</strong> and a <strong>desirable state</strong>. <br><br>Used in:<ul><li>IT — starting point for action plans</li><li>Software development — what's missing or needs developing</li><li>Compliance — comparing what's required vs what's done</li></ul>"},
+
+  {id:22, lecture:"L3 — Gap Analysis", q:"What are the 4 steps in a gap analysis?", a:"<ul><li>Establish specific target objectives (mission, strategic goals, improvements)</li><li>Analyse current business processes (data on performance and resources)</li><li>Compare target goals against current state</li><li>Draw up a comprehensive plan</li></ul>Documentation can be quantitative (e.g. call volumes) or qualitative (e.g. workplace diversity)."},
+
+  {id:23, lecture:"L3 — Gap Analysis", q:"What's the difference between top-down and bottom-up gap analysis?", a:"<strong>Top-down:</strong> Understanding implementation options (start broad)<br><strong>Bottom-up:</strong> Prioritising options (start specific)<br><br>Both approaches are valid; use depends on context."},
+
+  {id:24, lecture:"L3 — Gap Analysis", q:"What are the key considerations when choosing implementation options?", a:"<ul><li><strong>Business demand</strong> — patterns of demand?</li><li><strong>Constraints</strong> — current and changing</li><li><strong>Security & compliance</strong> — standards/regulations to meet</li><li><strong>Information sensitivity</strong> — legal/ethical/privacy concerns</li><li><strong>Infrastructure restrictions</strong> — short or long-term in existing systems</li><li><strong>Extensibility</strong> — easy to expand/customise?</li><li><strong>Financial advantage</strong> — reduce operational costs?</li><li><strong>Internal capacity</strong> — skills and resources?</li><li><strong>Outsourced or managed</strong> — build or buy?</li><li><strong>Strategic advantage</strong> — innovate faster?</li></ul>"},
+
+  {id:25, lecture:"L3 — Gap Analysis", q:"What are the 4 patterns of business demand?", a:"<ul><li><strong>Predictable bursting</strong> — regular, expected pattern (e.g. month-end financial reporting, daytime usage)</li><li><strong>Unpredictable bursting</strong> — sudden, random spikes (e.g. crisis, viral marketing mistake)</li><li><strong>Rapid growth</strong> — fast scaling (e.g. Animoto: 50→3,500 servers in 3 days)</li><li><strong>On and off</strong> — sporadic occasional use (e.g. benefits enrolment, ticket sales for major events)</li></ul>"},
+
+  {id:26, lecture:"L3 — Gap Analysis", q:"A company runs its reporting system in the last week of each month, with occasional server failures. Which demand patterns is this?", a:"TWO patterns:<br><ul><li><strong>Predictable bursting</strong> — the regular monthly use pattern (oscillating)</li><li><strong>Unpredictable bursting</strong> — the random server failures during that period</li></ul>The 2023 mock paper awarded marks for naming both."},
+
+  {id:27, lecture:"L3 — Gap Analysis", q:"What is elasticity in cloud computing?", a:"<strong>Definition:</strong> The ability of cloud systems to <strong>automatically add or remove</strong> computing resources in response to real-time changes in demand.<br><br><strong>Benefits:</strong><ul><li>Reduces payment for unused/idle capacity</li><li>Avoids upfront hardware investment</li><li>Maintains performance during demand spikes</li><li>Supports continuous availability during workload changes</li></ul><strong>Considerations:</strong> Requires careful configuration to avoid security/cost risks."},
+
+  {id:28, lecture:"L3 — Gap Analysis", q:"What are the 5 key issues for cloud implementation?", a:"Implementation should be managed as any other major IS project. Key issues:<br><ul><li><strong>Organisational change</strong> — training, user adoption, integration with legacy systems</li><li><strong>Supplier selection and management</strong> — choosing providers, ongoing relationships</li><li><strong>Implementation methodology</strong> — Waterfall, Agile, DevOps, project scope</li><li><strong>Measures of success</strong> — cost, performance, user satisfaction</li><li><strong>Integration</strong> — works with existing systems, data, processes</li></ul>"},
+
+  // ============================================================
+  // L4 — GOVERNANCE (10 cards)
+  // ============================================================
+  {id:29, lecture:"L4 — Governance", q:"What is governance? (APM definition)", a:"<em>'Governance is the framework of authority and accountability that defines and controls the outputs, outcomes and benefits from projects, programs and portfolios.'</em><br><br>The mechanism whereby the organisation exerts <strong>financial and technical control</strong> over deployment and value realisation.<br><br>Source: APM Body of Knowledge, 7th Edition, 2022."},
+
+  {id:30, lecture:"L4 — Governance", q:"What does governance determine?", a:"<ul><li>How decisions are made and by whom</li><li>Who is responsible for key activities and decisions</li><li>Who authorises expenditure and how</li><li>Who are the final decision-makers</li><li>Specifies accountability and policies for controlling change</li></ul>"},
+
+  {id:31, lecture:"L4 — Governance", q:"What are the 5 components of governance?", a:"<ul><li><strong>Principles & policies</strong> — business rules, decision hierarchy</li><li><strong>Organisation</strong> — RACI, roles, accountability</li><li><strong>Financials</strong> — funding model</li><li><strong>Processes</strong> — risk, vendor, performance, compliance, communications</li><li><strong>Metrics & tools</strong> — SLAs, QA, security, predictive vs reactive</li></ul>"},
+
+  {id:32, lecture:"L4 — Governance", q:"What does RACI stand for and what is the golden rule?", a:"<strong>R</strong>esponsible — does the work<br><strong>A</strong>ccountable — answerable for the outcome<br><strong>C</strong>onsulted — provides input<br><strong>I</strong>nformed — kept aware<br><br><strong>Golden Rule:</strong> Only <strong>ONE</strong> person/role can be Accountable for each task. Multiple A's = governance failure."},
+
+  {id:33, lecture:"L4 — Governance", q:"What are the 3 types of business rules in governance?", a:"<ul><li><strong>Coordination rules</strong> — manage how parts work together</li><li><strong>Qualification & disqualification rules</strong> — set criteria for inclusion/exclusion</li><li><strong>Decision rules</strong> — evaluate and assign next steps</li></ul>Purpose: establish expectations, provide guidelines, ensure safety, decrease errors."},
+
+  {id:34, lecture:"L4 — Governance", q:"What is the difference between predictive and reactive metrics?", a:"<strong>Predictive:</strong> Measure causal factors leading to performance <em>before</em> the fact (leading indicators).<br><br><strong>Reactive:</strong> Measure outcomes based on historical data <em>after</em> the fact (lagging indicators).<br><br>Both should be aligned to desired business and technology goals."},
+
+  {id:35, lecture:"L4 — Governance", q:"What was the BBC Digital Media Initiative and why does it matter?", a:"A £130m project cancelled in <strong>July 2013</strong>. Documented in National Audit Office Memorandum, January 2014.<br><br>Classic governance failure case study illustrating:<ul><li>No clear accountability</li><li>Poor financial controls</li><li>Inadequate risk management</li><li>Failure across multiple components of governance</li></ul>"},
+
+  {id:36, lecture:"L4 — Governance", q:"What are the Azure governance tools?", a:"<ul><li><strong>Azure Policy</strong> — enforces compliance rules, audits configurations</li><li><strong>Azure Cost Management</strong> — tracks usage and spend</li><li><strong>RBAC</strong> — Role-Based Access Control (fine-grained access management)</li><li><strong>Resource Locks</strong> — CanNotDelete, ReadOnly (prevent accidental changes)</li><li><strong>Tags</strong> — name-value pairs for organising resources (e.g. department:finance)</li><li><strong>Azure Blueprints</strong> — reusable deployment templates</li><li><strong>Cloud Adoption Framework (CAF)</strong> — best practices for adoption</li></ul>"},
+
+  {id:37, lecture:"L4 — Governance", q:"What signals does Azure Conditional Access use?", a:"Azure Active Directory uses these signals to make access decisions:<br><ul><li>User or Group membership</li><li>IP location</li><li>Device status</li><li>Application being accessed</li><li>Risk detection level</li></ul>"},
+
+  {id:38, lecture:"L4 — Governance", q:"What compliance standards does Azure offer?", a:"<ul><li><strong>CJIS</strong> — Criminal Justice Information Services</li><li><strong>HIPAA</strong> — Health Insurance Portability and Accountability Act (US)</li><li><strong>CSA STAR Certification</strong> — cloud-specific security</li><li><strong>ISO/IEC 27018</strong> — privacy in public clouds</li><li><strong>EU Model Clauses</strong> — data transfer compliance</li><li><strong>NIST</strong> — National Institute of Standards and Technology</li></ul>Azure has the most comprehensive compliance offerings of any cloud provider."},
+
+  // ============================================================
+  // L5 — COST MODELS (10 cards)
+  // ============================================================
+  {id:39, lecture:"L5 — Cost Models", q:"What is the difference between CAPEX and OPEX?", a:"<strong>CAPEX (Capital Expenditure):</strong> Major long-term asset purchases. Appears on the balance sheet. Cannot be deducted from income for corporation tax. Value reduces over time (e.g. buying a server).<br><br><strong>OPEX (Operational Expenditure):</strong> Day-to-day running costs. Tax deductible immediately. Does NOT appear on the balance sheet. Pay-as-you-go (e.g. monthly cloud subscription).<br><br>Cloud converts CAPEX → OPEX."},
+
+  {id:40, lecture:"L5 — Cost Models", q:"Why might organisations prefer OPEX over CAPEX?", a:"<ul><li><strong>Simpler accounting</strong></li><li><strong>Immediate tax deductibility</strong> (reduces declared profit)</li><li><strong>Better cash flow</strong> — no large upfront capital outlay</li><li>Can finance capital purchases as OPEX-style repayments</li></ul>BUT — neither is wholly good or bad. CAPEX builds value; OPEX is more flexible."},
+
+  {id:41, lecture:"L5 — Cost Models", q:"What is TCO and why does it matter for cloud?", a:"<strong>Total Cost of Ownership</strong> — all costs of owning/operating a technology over its lifetime.<br><br>For cloud, includes: monthly fees, bandwidth, training, support, migration, integration costs.<br><br>For on-premise, includes: hardware, electricity, cooling, maintenance, downtime, upgrades.<br><br><strong>53% of data centre costs are electricity and cooling</strong> — a key reason cloud providers achieve cost savings via economies of scale."},
+
+  {id:42, lecture:"L5 — Cost Models", q:"What is PUE and what is the ideal value?", a:"<strong>Power Usage Effectiveness</strong> = Total facility energy ÷ Energy delivered to computing.<br><br><ul><li><strong>1.0</strong> = ideal (impossible due to lighting/cooling)</li><li><strong>1.1</strong> = very efficient (cloud providers)</li><li><strong>2.5</strong> = inefficient</li><li><strong>3.0</strong> = very inefficient</li></ul>"},
+
+  {id:43, lecture:"L5 — Cost Models", q:"What is the consumption-based pricing model?", a:"End users pay only for the resources they use. Enables better cost prediction with transparent pricing and usage-based billing.<br><br>Pricing depends on resource:<ul><li><strong>Per second</strong> — VMs or persistent storage</li><li><strong>Per GB</strong> — data transfers between regions or to on-premises</li><li><strong>Per read operation</strong> — persistent storage</li><li><strong>Per request unit/sec</strong> — like a flat-rate highway (pay for capacity, not cars)</li></ul>"},
+
+  {id:44, lecture:"L5 — Cost Models", q:"What are the DCF formulas?", a:"<strong>Future Value:</strong> FV = PV × (1+r)ⁿ<br><strong>Present Value:</strong> PV = FV ÷ (1+r)ⁿ<br><br><strong>Examples:</strong><ul><li>£100 today is worth £128 in 5 years at 5% interest: 100×(1.05)⁵ ≈ £128</li><li>£500 in 5 years is worth £431 today at 3% inflation: 500÷(1.03)⁵ = £431</li></ul>NPV calculations typically done over 3-year or 5-year periods."},
+
+  {id:45, lecture:"L5 — Cost Models", q:"What is the NPV formula and decision rule?", a:"<strong>NPV = Σ [Cash flow ÷ (1 + r)ⁿ] − Initial investment</strong><br><br>Where r = discount rate (often WACC), n = year.<br><br><strong>Decision rule:</strong> Accept if NPV > 0; reject if negative. Companies often have a cut-off (e.g. 'nothing below £1M NPV')."},
+
+  {id:46, lecture:"L5 — Cost Models", q:"What is IRR and when do you reject a project?", a:"<strong>IRR (Internal Rate of Return)</strong> = the discount rate that makes NPV = 0.<br><br>Companies have a hurdle rate (their 'cost of money'). The IRR threshold.<br><br><strong>Decision rule:</strong> Reject if IRR < hurdle rate.<br>E.g. hurdle = 12% (the 'cost' of money to the company): reject any project with IRR < 12% — they could invest the money better elsewhere."},
+
+  {id:47, lecture:"L5 — Cost Models", q:"Calculate: invest £1,000 in year 0, receive £410/yr for 3 years at WACC 10%. Worth it?", a:"Year 1: £410 ÷ 1.10 = £373<br>Year 2: £410 ÷ 1.21 = £339<br>Year 3: £410 ÷ 1.331 = £308<br>Sum of discounted cash flows = £1,020<br>NPV = £1,020 − £1,000 = <strong>+£20</strong><br><br>NPV > 0, so <strong>ACCEPT ✓</strong>"},
+
+  {id:48, lecture:"L5 — Cost Models", q:"From a list of projects ranked by NPV, how do you select?", a:"<ul><li>Rank projects by NPV <strong>descending</strong></li><li>Apply company's <strong>cut-off threshold</strong> (e.g. NPV < £0.2M = reject)</li><li>Allocate budget top-down until exhausted</li><li>Stop when budget exhausted OR cut-off reached</li></ul>Example: Budget £1M, cutoff £0.2M, projects A(£0.7M), B(£0.3M), E(£0.25M), C(£0.2M), D(£0.1M).<br>Select: A (£0.3M remaining) → B (budget exhausted). Done."},
+
+  // ============================================================
+  // L6 — BUSINESS CASE (8 cards)
+  // ============================================================
+  {id:49, lecture:"L6 — Business Case", q:"What is a business case?", a:"A <strong>justification for undertaking a project</strong> based on its expected benefits weighed against costs.<br><br>Provides decision-makers with the information needed to approve, modify or reject a proposed initiative."},
+
+  {id:50, lecture:"L6 — Business Case", q:"What are the 10 key components of a business case?", a:"<ul><li>Strategic fit</li><li>Finance (NPV, IRR, TCO)</li><li>Risk</li><li>Technology fit</li><li>Timing</li><li>Opportunity costs</li><li>Employee impact</li><li>Public perception</li><li>Competitive position</li><li>Sustainability</li></ul>"},
+
+  {id:51, lecture:"L6 — Business Case", q:"What are tangible vs intangible benefits of cloud?", a:"<strong>Tangible (measurable):</strong><ul><li>Reduced IT expenditure</li><li>Increased sales</li><li>Faster business growth</li><li>Improved time to market</li></ul><strong>Intangible (qualitative):</strong><ul><li>Easier integration across the company</li><li>Improved employee morale</li><li>Better decision making</li><li>Better agility</li><li>Green efficiencies</li><li>Recruitment appeal</li></ul>"},
+
+  {id:52, lecture:"L6 — Business Case", q:"What are tangible vs intangible costs of cloud?", a:"<strong>Tangible:</strong><ul><li>Monthly DB fee per GB</li><li>Bandwidth provision</li><li>Training for IT staff</li><li>Application fee per user/month</li><li>Cloud support & helpdesk costs</li></ul><strong>Intangible:</strong><ul><li>Fear of security issues</li><li>Limitations of cloud applications</li><li>Employees needing to learn new applications</li><li>Risk of data loss</li><li>Opportunity costs</li></ul>"},
+
+  {id:53, lecture:"L6 — Business Case", q:"What were the key quantified benefits for Japan Post moving to Salesforce?", a:"<ul><li>Implementation: <strong>$165k</strong> (vs $10M+ avoided hardware costs)</li><li>Dev costs reduced by <strong>65%</strong> (>$1M saved over 3 years)</li><li>Dev <strong>4x faster</strong> than previous Java/.NET</li><li>Bugs: <strong>11.7/yr → 1/yr</strong> (91% improvement)</li><li>Availability: <strong>99.2% → 99.8%</strong></li><li>2x-3x less expensive than on-premise development</li></ul>Japan Post: 160k employees, 24k locations, 110M customers, 8 custom apps, 13M records."},
+
+  {id:54, lecture:"L6 — Business Case", q:"What 3 areas did Japan Post categorise their cloud benefits in?", a:"<ul><li><strong>Costs</strong> — for development, deployment, management of custom applications</li><li><strong>Speed & agility</strong> of delivery (allowed switch from Waterfall to Agile)</li><li><strong>Quality</strong> & user satisfaction</li></ul>Plus significant cost savings in application management, infrastructure and staff."},
+
+  {id:55, lecture:"L6 — Business Case", q:"What % of data centre costs are electricity and cooling?", a:"<strong>53%</strong> of data centre costs are electricity and cooling.<br><br>This is a major reason cloud providers can offer cost savings — they achieve economies of scale on power efficiency (low PUE) and cooling infrastructure that small organisations cannot match."},
+
+  {id:56, lecture:"L6 — Business Case", q:"What is the typical structure of a cloud business case?", a:"<ol><li>Direct comparisons of current costs vs future cloud costs</li><li>Tangible, quantifiable benefits (use Beaty et al. / Isom & Holley frameworks)</li><li>Intangible benefits considered against operational/strategic goals</li><li>Acknowledge uncertainty in some benefits/costs</li><li>Use NPV/IRR for financial analysis</li></ol>Beaty et al. (2011): 'Economics of cloud computing for enterprise IT', IBM Journal."},
+
+  // ============================================================
+  // L7 — RISK (12 cards)
+  // ============================================================
+  {id:57, lecture:"L7 — Risk", q:"What is risk and how is it calculated?", a:"<strong>Risk = the possibility of loss or injury</strong><br><br>'Possibility' = not certain to happen.<br>'Loss/injury' = negative impact on the project, organisation, or people.<br><br><strong>Risk = Likelihood × Impact</strong><br><br>Key point: every cloud initiative involves some risk — the goal is to <strong>manage</strong> it, not eliminate it."},
+
+  {id:58, lecture:"L7 — Risk", q:"What is the PMI risk management process?", a:"<ol><li><strong>Identify risks</strong></li><li><strong>Analyse risks</strong> (qualitative & quantitative)</li><li><strong>Plan risk responses</strong></li><li><strong>Monitor & control risks</strong></li></ol>Risk management is one of the key competency areas defined by the Project Management Institute (PMI)."},
+
+  {id:59, lecture:"L7 — Risk", q:"What are internal vs external sources of cloud risk?", a:"<strong>Internal:</strong><ul><li>People & human resources</li><li>Technology & changes</li><li>Quality & performance</li><li>Management</li><li>Funding & costs</li></ul><strong>External:</strong><ul><li>Customers</li><li>Vendors & suppliers</li><li>Market forces</li><li>Political/legal issues</li></ul>"},
+
+  {id:60, lecture:"L7 — Risk", q:"What are the typical sources of cloud computing risk?", a:"<ul><li>Scope creep</li><li>Staff absence / staff skills</li><li>Technology problems</li><li>Legislation changes</li><li>Supplier reliability</li><li>Requirements change</li><li>Cost overrun</li><li>Programming errors</li><li>Hardware availability</li><li>Withdrawal of funds</li><li>System overload</li><li>Existing systems affected</li><li>Top management commitment</li><li>Organisational change</li></ul>"},
+
+  {id:61, lecture:"L7 — Risk", q:"What are 5 techniques for identifying risks?", a:"<ul><li><strong>Document review</strong></li><li><strong>Brainstorming</strong></li><li><strong>Delphi technique</strong> — anonymous expert consensus</li><li><strong>Interviews</strong></li><li><strong>Root cause analysis</strong></li><li><strong>Checklist analysis</strong></li><li><strong>Assumptions analysis</strong></li><li><strong>Diagramming</strong> — cause & effect, process flow, influence diagrams</li><li><strong>SWOT analysis</strong></li><li><strong>Expert opinion</strong></li></ul>"},
+
+  {id:62, lecture:"L7 — Risk", q:"What's the difference between qualitative and quantitative risk analysis?", a:"<strong>Quantitative:</strong> Mathematical/statistical modelling.<ul><li>Users per hour</li><li>Average computational load</li><li>Server throughput</li><li>MTBF (Mean Time Between Failures)</li><li>Cost-benefit of failover options</li><li>Simulating peak load scenarios</li></ul><strong>Qualitative:</strong> Subjective scales.<ul><li>Probability rated 0-1, High/Med/Low, or 1-5</li><li>Impact on project</li><li>Time frame for response</li><li>Risk tolerance</li></ul>"},
+
+  {id:63, lecture:"L7 — Risk", q:"What are the 4 dimensions of qualitative risk analysis?", a:"<ul><li><strong>Probability</strong> — likelihood of occurrence (0-1, H/M/L, or 1-5)</li><li><strong>Impact</strong> — severity of consequences if it occurs</li><li><strong>Timeframe</strong> — when might it occur, when to respond (Immediate/Short/Long-term)</li><li><strong>Tolerance</strong> — organisation's willingness to accept (aligns with risk appetite)</li></ul>"},
+
+  {id:64, lecture:"L7 — Risk", q:"What are the impact scales for qualitative risk analysis?", a:"<strong>Numerical scale:</strong><br>Very Low/0.05 → Low/0.10 → Medium/0.20 → High/0.40 → Very High/0.80<br><br>Applied across:<ul><li><strong>Cost</strong> — insignificant → >40% increase</li><li><strong>Time</strong> — insignificant → >20% increase</li><li><strong>Scope</strong> — barely noticeable → end item useless</li><li><strong>Quality</strong> — barely noticeable → end item useless</li></ul>Defined as part of risk management planning."},
+
+  {id:65, lecture:"L7 — Risk", q:"What are the 4 risk response strategies?", a:"<ul><li><strong>Avoidance</strong> — eliminate the threat by removing its causes (e.g. don't store data in cloud)</li><li><strong>Acceptance</strong> — accept consequences without trying to control (e.g. build in test period)</li><li><strong>Transference</strong> — shift consequences and management to a third party (e.g. subcontract with quality guarantees)</li><li><strong>Mitigation</strong> — reduce impact OR probability (e.g. train team, peer review)</li></ul>"},
+
+  {id:66, lecture:"L7 — Risk", q:"What should a risk register (PRINCE2 format) record?", a:"<ul><li>Author (who identified the risk)</li><li>Date identified</li><li>Description</li><li>Risk category (commercial/legal/technical/software)</li><li>Impact</li><li>Probability</li><li>Proximity (how close in time?)</li><li>Risk response / countermeasure(s)</li><li>Owner (who is responsible for action)</li><li>Date of last update</li><li>Current status (closed, new, under review)</li></ul>PRINCE2 = PRojects IN Controlled Environments (OGC methodology)."},
+
+  {id:67, lecture:"L7 — Risk", q:"What is the 'metonymy' warning about risk registers?", a:"<strong>Metonymy:</strong> when one part of something is mistaken for the whole.<br><br>A risk register listing 20 risks does NOT mean those are the only risks. It can give a <strong>false sense of control</strong>.<br><br>The register (the part) is mistaken for all project risks (the whole). Maintaining it doesn't mean you're managing risks — they are not the same!<br><br>Source: Drummond, H. (2011), 'MIS and illusions of control'."},
+
+  {id:68, lecture:"L7 — Risk", q:"What does the Toyota 2010 case illustrate about risk management?", a:"Toyota recalled millions of cars due to faulty accelerator pedals. They had <strong>disaggregated</strong> the risk into:<ul><li>Risk of faulty components (supplier responsibility)</li><li>Risk of fitting them (operational responsibility)</li><li>Risk of failing to gather data on emerging problems</li><li>Risk of reputation loss</li></ul>Each individual risk seemed manageable, but they failed to appreciate the <strong>inter-related nature</strong>. Known about for months without coherent response.<br><br>Illustrates the <strong>illusion of risk control</strong>."},
+
+  // ============================================================
+  // L8 — 3RD PARTY PROVIDERS (10 cards)
+  // ============================================================
+  {id:69, lecture:"L8 — Providers", q:"What are the 4 categories of cloud service providers?", a:"<ul><li><strong>Cloud Technology Provider</strong> — creates the technology (AWS EC2, Nvidia DGX, GCP TPUs, Lambda Labs, Oracle)</li><li><strong>Cloud Service Provider</strong> — hosts services (Fujitsu, Dell, HP, Rackspace, AWS, Azure, Google Cloud, VMware)</li><li><strong>Cloud Independent Software Vendor (ISV)</strong> — value-added services, monitoring (Flexera, Densify, SAP, Salesforce, Citrix, Canonical)</li><li><strong>Cloud Systems Integrator / Broker</strong> — implements (Accenture, Wipro) or mediates (Boomi, RackNap)</li></ul>"},
+
+  {id:70, lecture:"L8 — Providers", q:"What 8 aspects should you evaluate when choosing a cloud vendor?", a:"<ul><li>Determine their commitment to the cloud model (long-term viability)</li><li>Check existing customer base</li><li>Configurability and flexibility (especially for SaaS)</li><li>Integration needs and fit with target architecture</li><li>Upgrade and maintenance strategies</li><li>Proposed Service Level Agreements (SLAs)</li><li>Vendor's security plans</li><li>Back-up and disaster recovery plans</li></ul>"},
+
+  {id:71, lecture:"L8 — Providers", q:"What are the 5 areas of the cloud vendor evaluation framework?", a:"<ul><li><strong>Data</strong> — encryption (transit/rest), multi-tenancy, retention</li><li><strong>Business</strong> — data centre locations, third-party certifications</li><li><strong>Legal</strong> — jurisdiction, dispute resolution, IP, copyright</li><li><strong>User & device</strong> — anonymous use, federation, MFA, device control</li><li><strong>Service</strong> — penetration testing, no recent breaches, IP filtering, audit trails</li></ul>"},
+
+  {id:72, lecture:"L8 — Providers", q:"What is the difference between encryption in transit and at rest?", a:"<strong>In transit:</strong> Data being transmitted. Protected by <strong>SSL/TLS protocols</strong>.<br><br><strong>At rest:</strong> Data stored on disk. Protected by <strong>AES 256-bit encryption</strong>.<br><br><strong>Critical question:</strong> Who controls the encryption keys — can the cloud provider decrypt your data?<br><br>(A quantum computer would take 2.29×10³² years to crack AES 256 — longer than the age of the Universe.)"},
+
+  {id:73, lecture:"L8 — Providers", q:"What is data multi-tenancy and why does it matter?", a:"<strong>Multi-tenancy</strong> = multiple customers' data on shared cloud infrastructure.<br><br>Critical evaluation question: <strong>How is data for multiple tenants separated?</strong><br><br>Also matters for data retention on termination — terms about how long and in what form data is retained after the contract ends."},
+
+  {id:74, lecture:"L8 — Providers", q:"What is the difference between ISO/IEC 27001 and SOC 2?", a:"<strong>ISO/IEC 27001:2022:</strong> International standard for <strong>Information Security Management Systems (ISMS)</strong>. Used to assess how organisations manage and protect information.<br><br><strong>SOC 2 (Service Organization Control 2):</strong> A third-party audit report focusing on <strong>security, availability, confidentiality, and privacy</strong> controls. Commonly used by cloud providers."},
+
+  {id:75, lecture:"L8 — Providers", q:"What is CSA and what does it produce?", a:"<strong>Cloud Security Alliance</strong> — global non-profit defining best practices for cloud security assurance.<br><br>Best known for:<ul><li><strong>Cloud Controls Matrix (CCM)</strong> — security framework</li><li><strong>STAR Registry</strong> — provider audit registry</li></ul>"},
+
+  {id:76, lecture:"L8 — Providers", q:"What is OWASP and what does it produce?", a:"<strong>Open Web Application Security Project</strong> — global community-led organisation focused on improving software security.<br><br>Key contributions:<ul><li><strong>OWASP Top 10</strong> — critical risk ranking</li><li><strong>SAMM (Software Assurance Maturity Model)</strong> — for governing secure development lifecycles</li></ul>"},
+
+  {id:77, lecture:"L8 — Providers", q:"What are the 4 user/device evaluation criteria for cloud providers?", a:"<ul><li><strong>Anonymous use policy</strong> — services only for authenticated users</li><li><strong>Identity federation method</strong> — authentication via <strong>SAML or OAuth</strong></li><li><strong>Multi-factor authentication</strong> — beyond username/password (tokens or biometrics)</li><li><strong>Device access control</strong> — based on approved OS or registered devices</li></ul>"},
+
+  {id:78, lecture:"L8 — Providers", q:"What are the 5 legal evaluation criteria for cloud providers?", a:"<ul><li><strong>Jurisdictional location</strong> — favourable for legal disputes?</li><li><strong>Dispute resolution</strong> — terms don't limit arbitration</li><li><strong>Prohibited from third-party disclosure</strong> — provider notifies before sharing data via subpoena</li><li><strong>Copyright controls</strong> — meets DMCA requirements</li><li><strong>IP ownership</strong> — clear that customer owns uploaded info</li></ul>"},
+
+  // ============================================================
+  // L9 — CONTRACTING (12 cards)
+  // ============================================================
+  {id:79, lecture:"L9 — Contracting", q:"Why have a contract with a cloud provider?", a:"<ul><li>Be clear about <strong>what</strong> will be provided</li><li>Be clear about <strong>cost</strong></li><li>Be clear about <strong>roles and responsibilities</strong></li><li>Be clear about <strong>service expected</strong></li><li><strong>Manage risk</strong></li><li>Be clear about <strong>dispute resolution</strong></li><li>Be clear about <strong>change management</strong></li></ul>"},
+
+  {id:80, lecture:"L9 — Contracting", q:"How has cloud changed the traditional IT contracting model?", a:"<strong>Old way (on-premise):</strong><ul><li>6+ months negotiation</li><li>Highly customised, complex</li><li>Inflexible, lengthy terms</li><li>1:1 delivery (people- and asset-based)</li></ul><strong>New way (cloud):</strong><ul><li>Standard 'I Accept' agreements</li><li>Simpler, more flexible</li><li>Asset-free, 'as a service'</li><li>1:many delivery (highly standard, automated)</li></ul>"},
+
+  {id:81, lecture:"L9 — Contracting", q:"What 7 questions must you ask a cloud provider before signing?", a:"<ul><li>What exactly am I buying? (clearly defined service?)</li><li>Who is responsible for what? (subcontractors involved?)</li><li>How fast will they respond? (when things go wrong)</li><li>What happens in a disaster? (recovery plan?)</li><li>Can I change my mind? (scaling, suspending)</li><li>How are problems fixed? (incident management)</li><li>Where is my data? (jurisdiction, who handles it)</li></ul>"},
+
+  {id:82, lecture:"L9 — Contracting", q:"What 6 pricing questions should you ask every cloud provider?", a:"<ul><li><strong>Fixed or variable?</strong> Flat fee or based on usage?</li><li><strong>How is usage measured?</strong> What counts as a 'unit'?</li><li><strong>Discounts?</strong> Does unit price drop as usage rises?</li><li><strong>When can we change?</strong> Cancellation/scaling deadlines?</li><li><strong>Minimum?</strong> Required contract period?</li><li><strong>What's not included?</strong> Hidden fees (data transfer, APIs)?</li></ul>"},
+
+  {id:83, lecture:"L9 — Contracting", q:"What is the difference between a Data Controller and Data Processor under GDPR?", a:"<strong>Data Controller</strong> (e.g. the bank):<ul><li>Decides what data to collect/process</li><li>Ensures customer consent</li><li>Remains <em>legally liable</em></li></ul><strong>Data Processor</strong> (e.g. the cloud provider):<ul><li>Follows the controller's instructions</li><li>Cannot use data for other purposes</li><li>Secures the data</li></ul><strong>Key point:</strong> Even if the controller doesn't physically hold the data, they remain fully responsible."},
+
+  {id:84, lecture:"L9 — Contracting", q:"What are the key SLA metrics?", a:"<ul><li><strong>Availability</strong> — uptime % (e.g. 99.99% = <1 hr downtime/year)</li><li><strong>Reliability</strong> — MTBF (Mean Time Between Failures) & MTTR (Mean Time to Repair)</li><li><strong>Performance</strong> — latency, response time</li><li><strong>Scalability</strong> — automatic vs claim redemption</li><li><strong>Serviceability</strong> — support quality, credit caps</li></ul>Real example: Terremark 99.5% uptime = 200 min/month allowed downtime."},
+
+  {id:85, lecture:"L9 — Contracting", q:"How does cloud security responsibility split between provider and customer?", a:"<strong>Provider responsibilities:</strong><ul><li>Physical security (the building)</li><li>Network/infrastructure layer</li><li>Patching the platform</li></ul><strong>Customer responsibilities:</strong><ul><li>Data security ← <em>the big one!</em></li><li>Configuration patches</li><li>Access controls</li></ul><strong>Neither:</strong> Force majeure (war, natural disaster)."},
+
+  {id:86, lecture:"L9 — Contracting", q:"What is force majeure?", a:"A clause that releases both parties from liability when an extraordinary event prevents fulfilment of the contract.<br><br><strong>Examples:</strong> war, natural disaster, government action, pandemic.<br><br>Neither the cloud provider nor the customer is liable in these scenarios."},
+
+  {id:87, lecture:"L9 — Contracting", q:"What liability exclusions do most cloud contracts include?", a:"Most cloud contracts exclude liability for:<ul><li>Lost profits or business opportunities</li><li>Loss of use of services not part of the offering</li><li>Loss of revenue or goodwill</li><li>Business interruption</li><li>Loss of data</li><li>Indirect, special, incidental, consequential losses</li></ul><strong>VMware example:</strong> <em>'Supplier shall not be liable for any lost profits or business opportunities, loss of use of services... loss of data, or any indirect, special, incidental, or consequential losses.'</em>"},
+
+  {id:88, lecture:"L9 — Contracting", q:"What are the 3 scenarios for data preservation when a cloud contract ends?", a:"<ul><li><strong>Scenario 1:</strong> Data retained for a set period (3, 15, or 30 days). Customer can access (subject to terms) during this time.</li><li><strong>Scenario 2:</strong> Data deleted <em>immediately</em> at end of contract.</li><li><strong>Scenario 3:</strong> No obligation to preserve, but provider won't intentionally delete (grace period at supplier's discretion).</li></ul>"},
+
+  {id:89, lecture:"L9 — Contracting", q:"How do the 4 risk responses map to contract clauses?", a:"<ul><li><strong>Avoidance</strong> — prohibited activities, data location restrictions</li><li><strong>Acceptance</strong> — limited liability clauses, force majeure</li><li><strong>Transference</strong> — liability clauses, indemnities, insurance obligations</li><li><strong>Mitigation</strong> — SLA penalties, incident response obligations, backup requirements</li></ul>Contract terms generally align with one of these risk responses."},
+
+  {id:90, lecture:"L9 — Contracting", q:"What 6 quality management requirements should you verify with a cloud supplier?", a:"<ul><li><strong>Risk management</strong> — how do they identify and mitigate risks to customer data?</li><li><strong>Attack prevention</strong> — operational controls protecting against attacks?</li><li><strong>Security roles</strong> — clearly defined responsibilities?</li><li><strong>Staff training</strong> — competency and awareness?</li><li><strong>Operations impact</strong> — preventing internal IT issues affecting customers?</li><li><strong>Incident response</strong> — what happens when a breach occurs?</li></ul>Some UK providers accredited under <strong>ISO/IEC 27001</strong>."},
+];
+
+let currentFilter = 'all';
+let currentIndex = 0;
+let flipped = false;
+let deck = [];
+let status = {}; // card id -> 'know' | 'learn' | null
+
+function buildDeck() {
+  if (currentFilter === 'all') {
+    deck = [...ALL_CARDS];
+  } else if (currentFilter === 'review') {
+    deck = ALL_CARDS.filter(c => status[c.id] === 'learn');
+  } else {
+    deck = ALL_CARDS.filter(c => c.lecture.startsWith(currentFilter));
+  }
+  currentIndex = 0;
+  flipped = false;
+  renderCard();
+  updateStats();
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  buildDeck();
+}
+
+function renderCard() {
+  const inner = document.getElementById('card-inner');
+  inner.classList.remove('flipped');
+  flipped = false;
+
+  if (deck.length === 0) {
+    document.getElementById('card-front').querySelector('.card-lecture').textContent = '';
+    document.getElementById('card-question').textContent = '';
+    document.getElementById('card-answer').innerHTML = '';
+    document.getElementById('deck-info').textContent = 'No cards match this filter.';
+    document.getElementById('progress-fill').style.width = '0%';
+    return;
+  }
+
+  const card = deck[currentIndex];
+  document.getElementById('card-lecture').textContent = card.lecture;
+  document.getElementById('card-question').textContent = card.q;
+  document.getElementById('card-answer').innerHTML = card.a;
+
+  document.getElementById('deck-info').textContent =
+    `Card ${currentIndex + 1} of ${deck.length}`;
+
+  const pct = deck.length > 0 ? ((currentIndex) / deck.length) * 100 : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function flipCard() {
+  const inner = document.getElementById('card-inner');
+  flipped = !flipped;
+  inner.classList.toggle('flipped', flipped);
+}
+
+function next() {
+  if (deck.length === 0) return;
+  currentIndex = (currentIndex + 1) % deck.length;
+  renderCard();
+}
+
+function prev() {
+  if (deck.length === 0) return;
+  currentIndex = (currentIndex - 1 + deck.length) % deck.length;
+  renderCard();
+}
+
+function markCard(s) {
+  if (deck.length === 0) return;
+  const card = deck[currentIndex];
+  status[card.id] = s;
+  updateStats();
+  next();
+}
+
+function updateStats() {
+  const know = Object.values(status).filter(v => v === 'know').length;
+  const learn = Object.values(status).filter(v => v === 'learn').length;
+  document.getElementById('stat-total').textContent = ALL_CARDS.length;
+  document.getElementById('stat-know').textContent = know;
+  document.getElementById('stat-learn').textContent = learn;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') next();
+  else if (e.key === 'ArrowLeft') prev();
+  else if (e.key === ' ') { e.preventDefault(); flipCard(); }
+  else if (e.key === 'g') markCard('know');
+  else if (e.key === 'r') markCard('learn');
+});
+
+buildDeck();
+updateStats();
+</script>
+</body>
+</html>
